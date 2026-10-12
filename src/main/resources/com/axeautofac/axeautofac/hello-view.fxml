@@ -1,16 +1,62 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.layout.VBox?>
-
 <?import javafx.scene.control.Button?>
-<VBox alignment="CENTER" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.axeautofac.axeautofac.HelloController">
-    <padding>
-        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
-    </padding>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
 
-    <Label fx:id="welcomeText"/>
-    <Button text="Hello!" onAction="#onHelloButtonClick"/>
+<!-- Le VBox est le conteneur principal : il empile les éléments de haut en bas -->
+<VBox alignment="TOP_CENTER" spacing="25.0" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.axeautofac.axeautofac.HelloController"
+      style="-fx-background-color: #f4f6f9; -fx-padding: 30;">
+
+    <!-- Titre principal plus grand -->
+    <Label text="Édition d'une Nouvelle Facture"
+           styleClass="h2, text-primary"
+           style="-fx-font-weight: bold; -fx-font-size: 28px;"/>
+
+    <!-- Grille pour aligner proprement les labels et les champs de saisie -->
+    <GridPane vgap="15" hgap="15" alignment="CENTER" style="-fx-background-color: white; -fx-padding: 25; -fx-border-color: #e2e8f0; -fx-border-radius: 8; -fx-background-radius: 8;">
+
+        <columnConstraints>
+            <!-- Colonne des Labels (droite alignée) -->
+            <ColumnConstraints halignment="RIGHT" minWidth="120" />
+            <!-- Colonne des Champs de saisie -->
+            <ColumnConstraints minWidth="300" />
+        </columnConstraints>
+
+        <!-- Ligne 1 : Client -->
+        <Label text="Nom du Client :" GridPane.rowIndex="0" GridPane.columnIndex="0" style="-fx-font-size: 14px;"/>
+        <TextField fx:id="champClient" promptText="Ex: Jean Dupont"
+                   GridPane.rowIndex="0" GridPane.columnIndex="1"
+                   styleClass="form-control" style="-fx-font-size: 14px;"/>
+
+        <!-- Ligne 2 : Immatriculation -->
+        <Label text="Immatriculation :" GridPane.rowIndex="1" GridPane.columnIndex="0" style="-fx-font-size: 14px;"/>
+        <TextField fx:id="champImmatriculation" promptText="Ex: AB-123-CD"
+                   GridPane.rowIndex="1" GridPane.columnIndex="1"
+                   styleClass="form-control" style="-fx-font-size: 14px;"/>
+
+        <!-- Ligne 3 : Prestation -->
+        <Label text="Prestation :" GridPane.rowIndex="2" GridPane.columnIndex="0" style="-fx-font-size: 14px;"/>
+        <TextField fx:id="champPrestation" promptText="Ex: Remplacement plaquettes de freins"
+                   GridPane.rowIndex="2" GridPane.columnIndex="1"
+                   styleClass="form-control" style="-fx-font-size: 14px;"/>
+
+        <!-- Ligne 4 : Montant -->
+        <Label text="Montant Total (€) :" GridPane.rowIndex="3" GridPane.columnIndex="0" style="-fx-font-size: 14px;"/>
+        <TextField fx:id="champMontant" promptText="Ex: 150.00"
+                   GridPane.rowIndex="3" GridPane.columnIndex="1"
+                   styleClass="form-control" style="-fx-font-size: 14px;"/>
+
+    </GridPane>
+
+    <!-- Bouton de validation sans le caractère qui bug -->
+    <Button text="Générer la Facture" onAction="#onGenererFactureClick"
+            styleClass="btn, btn-primary, btn-lg"
+            style="-fx-font-weight: bold; -fx-cursor: hand;" />
+
 </VBox>
