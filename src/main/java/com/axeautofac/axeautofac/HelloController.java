@@ -44,15 +44,25 @@ public class HelloController {
             return;
         }
 
-        System.out.println("=== NOUVELLE FACTURE ===");
-        System.out.println("Client      : " + client);
-        System.out.println("Immat.      : " + immatriculation);
-        System.out.println("Prestation  : " + prestation);
-        System.out.println("Total       : " + montant + " €");
-        System.out.println("========================");
 
-        afficherAlerte(Alert.AlertType.INFORMATION, "Données validées",
-                "Les informations ont été récupérées avec succès !\nProchaine étape : générer le fichier PDF dans le dossier.");
+        // On demande au générateur de créer le PDF
+        String cheminFichier = GenerateurPDF.creerFacture(client, immatriculation, prestation, montant);
+
+        if (cheminFichier != null) {
+            // Succès ! On affiche le chemin exact pour rassurer votre père
+            afficherAlerte(Alert.AlertType.INFORMATION, "Facture générée avec succès",
+                    "Le document a été créé dans ce dossier :\n\n" + cheminFichier);
+
+            // Bonus : on vide les cases pour la prochaine facture
+            champClient.clear();
+            champImmatriculation.clear();
+            champPrestation.clear();
+            champMontant.clear();
+        } else {
+            // Échec (si le PDF était par exemple déjà ouvert en arrière-plan)
+            afficherAlerte(Alert.AlertType.ERROR, "Erreur système",
+                    "Impossible de créer le PDF. Vérifiez que la facture n'est pas déjà ouverte.");
+        }
     }
 
     // Un petit utilitaire pour afficher des boîtes de dialogue (pop-ups) à l'écran
