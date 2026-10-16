@@ -5,27 +5,29 @@ import com.lowagie.text.pdf.*;
 import java.awt.Color;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
 public class GenerateurPDF {
 
-    // --- LES COORDONNÉES LÉGALES DE VOTRE PÈRE ---
-    private static final String NOM_GARAGE = "GARAGE GHULAM DIN";
-    private static final String ADRESSE_GARAGE = "123 Route de la Mécanique\n75000 Ville";
+    // --- LES COORDONNÉES LÉGALES OFFICIELLES DU GARAGE ---
+    private static final String NOM_GARAGE = "L'AXE AUTO 94";
+    private static final String STATUT_GARAGE = "SASU au capital de 1 000 €";
+    private static final String ADRESSE_GARAGE = "97 Avenue des Martyrs de Chateaubriant\n94310 Orly";
     private static final String TELEPHONE_GARAGE = "06 00 00 00 00";
-    private static final String SIRET_GARAGE = "SIRET : XXXXXXXXXXXXXX - RM de Goussainville";
+    private static final String SIRET_GARAGE = "SIREN : 106 724 644 - R.C.S. Créteil";
 
-    // On ajoute le taux de TVA (20% en général pour la mécanique)
+    // Taux de TVA (20%)
     private static final double TAUX_TVA = 0.20;
 
-    public static String creerFacture(String client, String immatriculation, String prestation, String montantHTStr) {
+    public static String creerFacture(String client, String immatriculation, String prestation, String montantTTCStr) {
         try {
-            // 0. Calculs TVA
-            // On remplace la virgule par un point au cas où, puis on convertit en nombre
-            double montantHT = Double.parseDouble(montantHTStr.replace(",", "."));
-            double montantTVA = montantHT * TAUX_TVA;
-            double montantTTC = montantHT + montantTVA;
+            // 0. Calculs comptables
+            double montantTTC = Double.parseDouble(montantTTCStr.replace(",", "."));
+            double montantHT = montantTTC / (1 + TAUX_TVA);
+            double montantTVA = montantTTC - montantHT;
 
             // 1. Localisation automatique du dossier "Documents"
             String cheminDocuments = System.getProperty("user.home") + File.separator + "Documents" + File.separator + "Factures_Garage";
@@ -36,8 +38,11 @@ public class GenerateurPDF {
 
             // 2. Génération du nom de fichier unique
             String dateDuJour = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+            String heureExacte = LocalTime.now().format(DateTimeFormatter.ofPattern("HHmmss"));
             String dateAffichage = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-            String cheminComplet = cheminDocuments + File.separator + "Facture_" + immatriculation + "_" + dateDuJour + ".pdf";
+
+            String nomFichier = "Facture_" + immatriculation + "_" + dateDuJour + "_" + heureExacte + ".pdf";
+            String cheminComplet = cheminDocuments + File.separator + nomFichier;
 
             // 3. Initialisation de la feuille A4 virtuelle
             Document document = new Document(PageSize.A4);
@@ -48,14 +53,50 @@ public class GenerateurPDF {
             Font policeTitre = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 22);
             Font policeNormale = FontFactory.getFont(FontFactory.HELVETICA, 12);
             Font policeGras = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
+            Font policeLegale = FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 10);
 
-            // --- EN-TÊTE DU GARAGE ---
-            Paragraph entete = new Paragraph(NOM_GARAGE + "\n" + ADRESSE_GARAGE + "\nTél : " + TELEPHONE_GARAGE + "\n" + SIRET_GARAGE, policeGras);
-            document.add(entete);
+            // --- INTÉGRATION DU LOGO ET DE L'EN-TÊTE ---
+            // On utilise un tableau sans bordures pour aligner le logo à gauche et le texte à droite
+            PdfPTable tableEntete = new PdfPTable(2);
+            tableEntete.setWidthPercentage(100);
+            tableEntete.setWidths(new float[]{1f, 2f}); // La colonne texte est 2x plus large que l'image
+
+            // A. Chargement de l'image depuis les ressources (Dossier img tel que défini)
+            PdfPCell cellLogo = new PdfPCell();
+            cellLogo.setBorder(Rectangle.NO_BORDER);
+            try {
+                // IMPORTANT : L'image doit s'appeler exactement "logo.jpg" dans votre dossier img
+                InputStream is = GenerateurPDF.class.getResourceAsStream("img/logo.jpg");
+                if (is != null) {
+                    byte[] imageBytes = is.readAllBytes();
+                    Image logo = Image.getInstance(imageBytes);
+                    // On redimensionne l'image pour qu'elle s'intègre proprement sans tout écraser
+                    logo.scaleToFit(150, 150);
+                    logo.setAlignment(Element.ALIGN_LEFT);
+                    cellLogo.addElement(logo);
+                } else {
+                    System.out.println("Attention : Logo introuvable dans le dossier resources/com/axeautofac/axeautofac/img/");
+                }
+            } catch (Exception imgEx) {
+                System.out.println("Erreur lors du chargement de l'image : " + imgEx.getMessage());
+            }
+
+            // B. Texte de l'en-tête
+            PdfPCell cellTexte = new PdfPCell();
+            cellTexte.setBorder(Rectangle.NO_BORDER);
+            cellTexte.setHorizontalAlignment(Element.ALIGN_RIGHT);
+            Paragraph texteEntete = new Paragraph(NOM_GARAGE + " - " + STATUT_GARAGE + "\n" + ADRESSE_GARAGE + "\nTél : " + TELEPHONE_GARAGE + "\n" + SIRET_GARAGE, policeGras);
+            texteEntete.setAlignment(Element.ALIGN_RIGHT);
+            cellTexte.addElement(texteEntete);
+
+            // Ajout au tableau principal d'en-tête
+            tableEntete.addCell(cellLogo);
+            tableEntete.addCell(cellTexte);
+            document.add(tableEntete);
             document.add(new Paragraph("\n\n"));
 
             // --- TITRE DU DOCUMENT AVEC NUMÉRO UNIQUE ---
-            String numeroFacture = "FAC-" + dateDuJour + "-" + immatriculation.replace("-", "");
+            String numeroFacture = "FAC-" + dateDuJour + "-" + heureExacte;
             Paragraph titre = new Paragraph("FACTURE N° " + numeroFacture, policeTitre);
             titre.setAlignment(Element.ALIGN_CENTER);
             document.add(titre);
@@ -98,12 +139,12 @@ public class GenerateurPDF {
             cellMontant.setPadding(8f);
             tablePrix.addCell(cellMontant);
 
-            // Contenu tapé par votre père
+            // Contenu tapé
             PdfPCell contenuPresta = new PdfPCell(new Phrase(prestation, policeNormale));
             contenuPresta.setPadding(10f);
             tablePrix.addCell(contenuPresta);
 
-            // Affichage du montant HT formaté à 2 décimales
+            // Affichage du montant HT calculé, formaté à 2 décimales
             PdfPCell contenuMontant = new PdfPCell(new Phrase(String.format("%.2f €", montantHT), policeNormale));
             contenuMontant.setHorizontalAlignment(Element.ALIGN_CENTER);
             contenuMontant.setPadding(10f);
@@ -130,7 +171,7 @@ public class GenerateurPDF {
             cellTvaVal.setHorizontalAlignment(Element.ALIGN_RIGHT);
             tableTotal.addCell(cellTvaVal);
 
-            // Ligne TTC
+            // Ligne TTC (Celui saisi dans l'interface)
             PdfPCell cellTtcLibelle = new PdfPCell(new Phrase("Total TTC", policeGras));
             cellTtcLibelle.setBackgroundColor(Color.LIGHT_GRAY);
             tableTotal.addCell(cellTtcLibelle);
@@ -142,17 +183,21 @@ public class GenerateurPDF {
 
             document.add(tableTotal);
 
-            // 5. Signature
+            // 5. Signature et bas de page légal
             Paragraph footer = new Paragraph("\n\n\nMerci de votre confiance.", policeNormale);
             footer.setAlignment(Element.ALIGN_CENTER);
             document.add(footer);
+
+            Paragraph mentionsLegales = new Paragraph(NOM_GARAGE + " - " + STATUT_GARAGE + " - " + SIRET_GARAGE, policeLegale);
+            mentionsLegales.setAlignment(Element.ALIGN_CENTER);
+            document.add(new Paragraph("\n"));
+            document.add(mentionsLegales);
 
             document.close();
 
             return cheminComplet;
 
         } catch (NumberFormatException e) {
-            // Si votre père tape "cent euros" au lieu de "100"
             System.err.println("Erreur de format de nombre : le montant doit être un chiffre.");
             return null;
         } catch (Exception e) {
